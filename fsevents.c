@@ -143,6 +143,11 @@ static size_t const eventbuf_size = FSEVENT_BUFSIZ;
 static char* eventbuf = NULL;
 
 /**
+ * should ignore 831 event in MACOS(13.x)
+ */
+static int32_t EVENT_TYPE_831 = 831;
+
+/**
  * Handles one fsevents event
  */
 static void
@@ -172,7 +177,7 @@ handle_event(lua_State *L, struct kfs_event *event, ssize_t mlen)
 	atype  = event->type & FSE_TYPE_MASK;
 	/*uint32_t aflags = FSE_GET_FLAGS(event->type);*/
 
-	if ((atype < FSE_MAX_EVENTS) && (atype >= -1)) {
+	if ((atype < FSE_MAX_EVENTS) && (atype >= -1) || atype == EVENT_TYPE_831) {
 		/*printlogf(L, "Fsevents", "got event %s", eventNames[atype]);
 		if (aflags & FSE_COMBINED_EVENTS) {
 			logstring("Fsevents", "combined events");
@@ -330,7 +335,7 @@ fsevents_ready(lua_State *L, struct observance *obs)
 				eventbufOff += ptrSize-(eventbufOff%ptrSize);
 			}
 			while (off < len && whichArg < FSE_MAX_ARGS) {
-				/* assign argument pointer to eventbuf based on 
+				/* assign argument pointer to eventbuf based on
 				   known current offset into eventbuf */
 				uint16_t argLen = 0;
 				event->args[whichArg] = (struct kfs_event_arg *) (eventbuf + eventbufOff);
